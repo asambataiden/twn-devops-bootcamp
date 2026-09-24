@@ -1,29 +1,51 @@
 pipeline {
     agent any
+
     parameters {
-        string(name: 'APP_NAME', defaultValue: 'MyApp', description: 'Name of the Application')
-        string(name: 'APP_VERSION', choices: ['1.0.0', '1.0.1', '1.1.0'], description: 'Version of the Application')
-        booleanParam(name: 'executeTests', defaultValue: false, description: 'Execute Tests')
+        string(
+            name: 'APP_NAME',
+            defaultValue: 'MyApp',
+            description: 'Name of the Application'
+        )
+
+        choice(
+            name: 'APP_VERSION',
+            choices: ['1.0.0', '1.0.1', '1.1.0'],
+            description: 'Version of the Application'
+        )
+
+        booleanParam(
+            name: 'EXECUTE_TESTS',
+            defaultValue: false,
+            description: 'Execute Tests'
+        )
     }
 
     stages {
         stage('Build') {
             steps {
                 echo 'Building the Application ..........'
-                echo 'Building ${APP_NAME} version ${APP_VERSION} ..........'
+                echo "Building ${params.APP_NAME} version ${params.APP_VERSION} .........."
             }
         }
 
         stage('Test') {
+            when {
+                expression {
+                    return params.EXECUTE_TESTS
+                }
+            }
+
             steps {
                 echo 'Testing the Application ..........'
+                echo "Testing ${params.APP_NAME} version ${params.APP_VERSION} .........."
             }
         }
 
         stage('Deploy') {
             steps {
                 echo 'Deploying the Application ..........'
-                echo 'Deploying ${APP_NAME} version ${APP_VERSION} ..........'
+                echo "Deploying ${params.APP_NAME} version ${params.APP_VERSION} .........."
             }
         }
     }
