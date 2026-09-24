@@ -14,9 +14,9 @@ def buildImage() {
             ]
     )
             {
-                sh 'docker build -t asambataiden/demo-app:2.0 .'
+                sh 'docker build -t asambataiden/demo-app:jma-2.0 .'
                 sh 'echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin'
-                sh 'docker push asambataiden/demo-app:2.0'
+                sh 'docker push asambataiden/demo-app:jma-2.0'
             }
 }
 
