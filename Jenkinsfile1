@@ -16,7 +16,7 @@ pipeline {
 
         booleanParam(
             name: 'EXECUTE_TESTS',
-            defaultValue: false,
+            defaultValue: true,
             description: 'Execute Tests'
         )
     }
