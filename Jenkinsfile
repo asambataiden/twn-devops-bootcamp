@@ -29,14 +29,16 @@ pipeline {
             }
         }
 
-        stage('Build Image') {
+        stage('Build and push Image') {
             when {
                 branch 'main'
             }
 
             steps {
                 script {
-                    buildImage "asambataiden/demo-app:jma-3.0"
+                    buildImage 'asambataiden/demo-app:jma-3.0'
+                    dockerLogin()
+                    dockerPush 'asambataiden/demo-app:jma-3.0'
                 }
             }
         }
