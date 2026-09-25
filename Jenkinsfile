@@ -36,7 +36,7 @@ pipeline {
 
             steps {
                 script {
-                    buildImage "asambataiden/demo-app:jma-2.0"
+                    buildImage "asambataiden/demo-app:jma-3.0"
                 }
             }
         }
