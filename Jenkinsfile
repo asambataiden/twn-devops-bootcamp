@@ -1,3 +1,7 @@
+#!/user/bin/env groovy
+
+@Library('jenkins-shared-library')
+
 def gv
 
 pipeline {
@@ -20,19 +24,21 @@ pipeline {
         stage('Build JAR') {
             steps {
                 script {
-                    gv.buildJar()
+                    buildJar()
                 }
             }
         }
 
-        stage('Build Image') {
+        stage('Build and push Image') {
             when {
                 branch 'main'
             }
 
             steps {
                 script {
-                    gv.buildImage()
+                    buildImage 'asambataiden/demo-app:jma-3.0'
+                    dockerLogin()
+                    dockerPush 'asambataiden/demo-app:jma-3.0'
                 }
             }
         }
