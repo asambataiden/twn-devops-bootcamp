@@ -37,7 +37,6 @@ pipeline {
             steps {
                 script {
                     buildImage 'asambataiden/demo-app:jma-3.0'
-                    dockerLogin()
                     dockerPush 'asambataiden/demo-app:jma-3.0'
                 }
             }
