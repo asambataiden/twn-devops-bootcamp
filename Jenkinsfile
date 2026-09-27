@@ -81,51 +81,21 @@ pipeline {
             }
         }
 
-        stage('Commit Version Update') {
-            when {
-                branch 'commitVersionUpdate'
-            }
-
+        stage('commit version update'){
             steps {
                 script {
-                    echo "Committing application version ${env.APP_VERSION}"
+                    withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                        sh 'git config --global user.email "asamba.tamajong.aiden@outlook.com"'
+                        sh 'git config --global user.name "asambataiden"'
 
-                    sh '''
-                set -eu
+                        sh 'git status'
+                        sh 'git branch'
+                        sh 'git config --list'
 
-                git config user.name "asambataiden"
-                git config user.email "asamba.tamajong.aiden@outlook.com"
-
-                git add pom.xml
-
-                echo "Files staged for commit:"
-                git diff --cached --name-only
-            '''
-
-                    def hasChanges = sh(
-                        script: 'git diff --cached --quiet',
-                        returnStatus: true
-                    )
-
-                    if (hasChanges == 0) {
-                        echo 'No version change to commit.'
-                    } else {
-                        sh """
-                    git commit \
-                      -m "chore(release): bump version to ${env.APP_VERSION}"
-                """
-
-                        withCredentials([
-                            gitUsernamePassword(
-                                credentialsId: 'github-credentials',
-                                gitToolName: 'Default'
-                            )
-                        ]) {
-                            sh '''
-                        set -eu
-                        git push origin HEAD:commitVersionUpdate
-                    '''
-                        }
+                        sh "git remote set-url origin https://${USER}:${PASS}@github.com:asambataiden/twn-devops-bootcamp.git"
+                        sh 'git add .'
+                        sh 'git commit -m "ci: version bump"'
+                        sh 'git push origin HEAD:commitVersionUpdate'
                     }
                 }
             }
