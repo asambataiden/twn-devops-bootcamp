@@ -92,16 +92,16 @@ pipeline {
                     echo "Preparing version commit for ${env.APP_VERSION}"
 
                     sh '''
-                        set -eu
+                set -eu
 
-                        git config user.name "asambataiden"
-                        git config user.email "asamba.tamajong.aiden@outlook.com"
+                git config user.name "Jenkins CI"
+                git config user.email "jenkins-ci@users.noreply.github.com"
 
-                        git add pom.xml
+                git add pom.xml
 
-                        echo "Files staged for commit:"
-                        git diff --cached --name-only
-                    '''
+                echo "Files staged for commit:"
+                git diff --cached --name-only
+            '''
 
                     def hasChanges = sh(
                         script: 'git diff --cached --quiet',
@@ -123,10 +123,9 @@ pipeline {
                             )
                         ]) {
                             sh '''
-                                set -eu
-
-                                git push origin HEAD:commitVersionUpdate
-                            '''
+                        set -eu
+                        git push origin HEAD:commitVersionUpdate
+                    '''
                         }
                     }
                 }
