@@ -84,23 +84,46 @@ pipeline {
         stage('commit version update') {
             steps {
                 script {
-                    echo "building the docker image..."
+                    echo "Committing application version ${env.APP_VERSION}"
+
                     withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
-                        sh 'git config --global user.email "asamba.tamajong.aiden@outlook.com"'
-                        sh 'git config --global user.name "Asamba Tamajong Aiden"'
+                        echo "Committing application version ${env.APP_VERSION}"
+
+                        sh '''
+                            set -eu
+
+                            git config user.name "Asamba Tamajong Aiden"
+                            git config user.email "asamba.tamajong.aiden@outlook.com"
+
+                            git add pom.xml
+
+                            echo "Files staged for commit:"
+                            git diff --cached --name-only
+
+                            if git diff --cached --quiet; then
+                                echo "No version change to commit."
+                                exit 0
+                            fi
+                        '''
 
                         sh 'git status'
                         sh 'git branch'
                         sh 'git config --list'
 
-                        sh "git remote set url origin https://${USER}:${PASS}@github.com/asambataiden/twn-devops-bootcamp.git "
-                        sh 'git add .'
-                        sh "git commit -m 'ci : Update version bump  to ${env.APP_VERSION}'"
-                        sh 'git push origin HEAD:commitVersionUpdate'
+                        sh """
+                            git commit \
+                              -m "chore(release): bump version to ${env.APP_VERSION}"
+                        """
+
+                        sh """
+                            git remote set url origin https://${USER}:${PASS}@github.com/asambataiden/twn-devops-bootcamp.git
+                            git push origin HEAD:commitVersionUpdate
+                        """
                     }
                 }
             }
         }
+
     }
 
     post {
