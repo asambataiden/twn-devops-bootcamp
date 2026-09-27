@@ -81,48 +81,51 @@ pipeline {
             }
         }
 
-        stage('commit version update') {
+        stage('Commit Version Update') {
+            when {
+                branch 'commitVersionUpdate'
+            }
+
             steps {
                 script {
                     echo "Committing application version ${env.APP_VERSION}"
 
-                        sh '''
-                            set -eu
+                    sh '''
+                set -eu
 
-                            git config user.name "Jenkins CI"
-                            git config user.email "jenkins-ci@users.noreply.github.com"
+                git config user.name "asambataiden"
+                git config user.email "asamba.tamajong.aiden@outlook.com"
 
-                            git add pom.xml
+                git add pom.xml
 
-                            echo "Files staged for commit:"
-                            git diff --cached --name-only
+                echo "Files staged for commit:"
+                git diff --cached --name-only
+            '''
 
-                            if git diff --cached --quiet; then
-                                echo "No version change to commit."
-                                exit 0
-                            fi
-                        '''
+                    def hasChanges = sh(
+                        script: 'git diff --cached --quiet',
+                        returnStatus: true
+                    )
 
-                        sh 'git status'
-                        sh 'git branch'
-                        sh 'git config --list'
-
+                    if (hasChanges == 0) {
+                        echo 'No version change to commit.'
+                    } else {
                         sh """
-                            git commit \
-                              -m "chore(release): bump version to ${env.APP_VERSION}"
-                            git remote set-url origin https://github.com/asambataiden/twn-devops-bootcamp.git
-                        """
+                    git commit \
+                      -m "chore(release): bump version to ${env.APP_VERSION}"
+                """
 
-                    withCredentials([
-                        gitUsernamePassword(
-                            credentialsId: 'github-credentials',
-                            gitToolName: 'Default'
-                        )
-                    ]) {
-                        sh '''
-                            set -eu
-                            git push origin HEAD:commitVersionUpdate
-                        '''
+                        withCredentials([
+                            gitUsernamePassword(
+                                credentialsId: 'github-credentials',
+                                gitToolName: 'Default'
+                            )
+                        ]) {
+                            sh '''
+                        set -eu
+                        git push origin HEAD:commitVersionUpdate
+                    '''
+                        }
                     }
                 }
             }
