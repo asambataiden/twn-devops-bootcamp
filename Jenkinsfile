@@ -80,6 +80,27 @@ pipeline {
                 // deployApp()
             }
         }
+
+        stage('commit version update') {
+            steps {
+                script {
+                    echo "building the docker image..."
+                    withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                        sh 'git config --global user.email "asamba.tamajong.aiden@outlook.com"'
+                        sh 'git config --global user.name "Asamba Tamajong Aiden"'
+
+                        sh 'git status'
+                        sh 'git branch'
+                        sh 'git config --list'
+
+                        sh "git remote set url origin https://${USER}:${PASS}@github.com/asambataiden/twn-devops-bootcamp.git "
+                        sh 'git add .'
+                        sh "git commit -m 'ci : Update version bump  to ${env.APP_VERSION}'"
+                        sh 'git push origin HEAD:commitVersionUpdate'
+                    }
+                }
+            }
+        }
     }
 
     post {
