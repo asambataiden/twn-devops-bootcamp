@@ -84,7 +84,7 @@ pipeline {
         stage('commit version update'){
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                    withCredentials([gitUsernamePassword(credentialsId: 'github-credentials', gitToolName: 'Default')]){
                         sh 'git config --global user.email "asamba.tamajong.aiden@outlook.com"'
                         sh 'git config --global user.name "asambataiden"'
 
@@ -92,7 +92,7 @@ pipeline {
                         sh 'git branch'
                         sh 'git config --list'
 
-                        sh "git remote set-url origin https://${USER}:${PASS}@github.com/asambataiden/twn-devops-bootcamp.git"
+                        sh "git remote set-url origin https://github.com/asambataiden/twn-devops-bootcamp.git"
                         sh 'git add .'
                         sh 'git commit -m "ci: version bump"'
                         sh 'git push origin HEAD:commitVersionUpdate'
