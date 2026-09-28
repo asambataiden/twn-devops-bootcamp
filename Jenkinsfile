@@ -11,6 +11,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_REPOSITORY = 'asambataiden/demo-app'
+        EC2_HOST = '56.228.31.131'
     }
 
     stages {
@@ -50,7 +51,7 @@ pipeline {
 
         stage('Build and Push Image') {
             when {
-                branch 'main'
+                branch 'deployToAWSDockerServer'
             }
 
             steps {
@@ -68,16 +69,77 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+       /* stage('Deploy') {
             when {
                 branch 'main'
             }
 
             steps {
-                echo "Deploying application version ${env.APP_VERSION}"
 
-                // Replace with Shared Library step when migrated:
-                // deployApp()
+                script {
+
+                    echo "Deploying application version ${env.APP_VERSION}"
+
+                    def dockerCmd = "docker run -p 8080:8080 -d ${env.DOCKER_IMAGE_REPOSITORY}:${env.IMAGE_NAME}"
+
+                    sshagent(credentials: ['aws-ec2-docker-server-ssh'], executable: '') {
+                        // some block
+
+                    }
+
+
+
+                    // Replace with Shared Library step when migrated:
+                    // deployApp()
+
+                }
+
+            }
+        }*/
+
+
+        stage('Deploy') {
+            when {
+                branch 'deployToAWSDockerServer'
+            }
+
+            steps {
+                script {
+                    def image =
+                    "${env.DOCKER_IMAGE_REPOSITORY}:${env.IMAGE_NAME}"
+
+                    def containerName = 'demo-app'
+                    def host = env.EC2_HOST
+
+                    echo "Deploying ${image} to ${host}"
+
+                    sshagent(credentials: ['aws-ec2-docker-server-ssh']) {
+                        sh """
+                            set -eu
+
+                            ssh -o StrictHostKeyChecking=no ec2-user@${host} '
+                                set -eu
+
+                                docker pull ${image}
+
+                                docker rm -f ${containerName} 2>/dev/null || true
+
+                                docker run \
+                                    --detach \
+                                    --name ${containerName} \
+                                    --restart unless-stopped \
+                                    --publish 8080:8080 \
+                                    ${image}
+
+                                sleep 3
+
+                                docker ps \
+                                    --filter "name=${containerName}" \
+                                    --filter "status=running"
+                            '
+                        """
+                    }
+                }
             }
         }
 
