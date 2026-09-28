@@ -51,7 +51,7 @@ pipeline {
 
         stage('Build and Push Image') {
             when {
-                branch 'deployToAWSDockerServer'
+                branch 'main'
             }
 
             steps {
@@ -100,7 +100,7 @@ pipeline {
 
         stage('Deploy') {
             when {
-                branch 'deployToAWSDockerServer'
+                branch 'main'
             }
 
             steps {
