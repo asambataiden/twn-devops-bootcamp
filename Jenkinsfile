@@ -115,29 +115,29 @@ pipeline {
 
                     sshagent(credentials: ['aws-ec2-docker-server-ssh']) {
                         sh """
-                    set -eu
+                            set -eu
 
-                    ssh ec2-user@${host} '
-                        set -eu
+                            ssh -o StrictHostKeyChecking=no ec2-user@${host} '
+                                set -eu
 
-                        docker pull ${image}
+                                docker pull ${image}
 
-                        docker rm -f ${containerName} 2>/dev/null || true
+                                docker rm -f ${containerName} 2>/dev/null || true
 
-                        docker run \
-                            --detach \
-                            --name ${containerName} \
-                            --restart unless-stopped \
-                            --publish 8080:8080 \
-                            ${image}
+                                docker run \
+                                    --detach \
+                                    --name ${containerName} \
+                                    --restart unless-stopped \
+                                    --publish 8080:8080 \
+                                    ${image}
 
-                        sleep 3
+                                sleep 3
 
-                        docker ps \
-                            --filter "name=${containerName}" \
-                            --filter "status=running"
-                    '
-                """
+                                docker ps \
+                                    --filter "name=${containerName}" \
+                                    --filter "status=running"
+                            '
+                        """
                     }
                 }
             }
