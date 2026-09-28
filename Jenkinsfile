@@ -11,7 +11,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_REPOSITORY = 'asambataiden/demo-app'
-        EC2_HOST = 'http://46.101.157.198'
+        EC2_HOST = '56.228.31.131'
     }
 
     stages {
@@ -51,7 +51,7 @@ pipeline {
 
         stage('Build and Push Image') {
             when {
-                branch 'main'
+                branch 'deployToAWSDockerServer'
             }
 
             steps {
