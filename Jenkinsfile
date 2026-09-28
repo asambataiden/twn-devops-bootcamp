@@ -175,7 +175,7 @@ pipeline {
                             scp \
                               -o StrictHostKeyChecking=no \
                               docker-compose.yaml \
-                              ec2-user@${host}:/opt/demo-app/docker-compose.yaml
+                              ec2-user@${host}:/home/ec2-user/docker-compose.yaml
                         """
 
                         sh """
@@ -185,8 +185,6 @@ pipeline {
                               -o StrictHostKeyChecking=no \
                               ec2-user@${host} '
                                 set -eu
-
-                                cd /opt/demo-app
 
                                 cat > .env <<EOF
                         DOCKER_IMAGE_REPOSITORY=${env.DOCKER_IMAGE_REPOSITORY}
