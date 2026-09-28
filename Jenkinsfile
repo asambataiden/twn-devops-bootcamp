@@ -51,7 +51,7 @@ pipeline {
 
         stage('Build and Push Image') {
             when {
-                branch 'main'
+                branch 'deployToAWSDokerServer_With_DockerCompose'
             }
 
             steps {
@@ -97,8 +97,7 @@ pipeline {
             }
         }*/
 
-
-        stage('Deploy') {
+        /*stage('Deploy') {
             when {
                 branch 'main'
             }
@@ -114,7 +113,21 @@ pipeline {
                     echo "Deploying ${image} to ${host}"
 
                     sshagent(credentials: ['aws-ec2-docker-server-ssh']) {
+                        echo 'Secure copy docker-compose.yaml file to docker server '
+
+                        def dockerComposeCmd = 'docker-compose -f docker-compose.yaml up -d'
+
+                        def dockerRunCmd = " docker run \
+                                    --detach \
+                                    --name ${containerName} \
+                                    --restart unless-stopped \
+                                    --publish 8080:8080 \
+                                    ${image} "
+
                         sh """
+
+                            scp docker-compose.yaml ec2-user@${host}:/home/ec2-user
+
                             set -eu
 
                             ssh -o StrictHostKeyChecking=no ec2-user@${host} '
@@ -141,12 +154,64 @@ pipeline {
                     }
                 }
             }
+        }*/
+
+        stage('Deploy') {
+            when {
+                branch 'deployToAWSDokerServer_With_DockerCompose'
+            }
+
+            steps {
+                script {
+                    def host = env.EC2_HOST
+
+                    echo "Deploying ${env.DOCKER_IMAGE_REPOSITORY}:${env.IMAGE_NAME} to ${host}"
+
+                    sshagent(credentials: ['aws-ec2-docker-server-ssh']) {
+
+                        sh """
+                            set -eu
+
+                            scp \
+                              -o StrictHostKeyChecking=no \
+                              compose.yaml \
+                              ec2-user@${host}:/opt/demo-app/compose.yaml
+                        """
+
+                        sh """
+                            set -eu
+
+                            ssh \
+                              -o StrictHostKeyChecking=no \
+                              ec2-user@${host} '
+                                set -eu
+
+                                cd /opt/demo-app
+
+                                cat > .env <<EOF
+                                    DOCKER_IMAGE_REPOSITORY=${env.DOCKER_IMAGE_REPOSITORY}
+                                    IMAGE_NAME=${env.IMAGE_NAME}
+                                    SPRING_PROFILES_ACTIVE=default
+                                    EOF
+
+                                docker compose pull
+
+                                docker compose up \
+                                  --detach \
+                                  --remove-orphans
+
+                                docker compose ps
+                            '
+                        """
+                    }
+                }
+            }
         }
 
 
         stage('Commit Version Update') {
             when {
-                branch 'commitVersionUpdate'
+                branch 'deployToAWSDokerServer_With_DockerCompose'
             }
 
             steps {

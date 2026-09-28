@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  java-maven-app:
+    image: asambataiden/demo-app:java-maven-1.0
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:15.3
+    environment:
+      POSTGRES_USER: demo_user
+      POSTGRES_PASSWORD: demo_password
+      POSTGRES_DB: demo_db
