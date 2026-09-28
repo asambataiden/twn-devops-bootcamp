@@ -174,8 +174,8 @@ pipeline {
 
                             scp \
                               -o StrictHostKeyChecking=no \
-                              compose.yaml \
-                              ec2-user@${host}:/opt/demo-app/compose.yaml
+                              docker-compose.yaml \
+                              ec2-user@${host}:/opt/demo-app/docker-compose.yaml
                         """
 
                         sh """
@@ -189,18 +189,24 @@ pipeline {
                                 cd /opt/demo-app
 
                                 cat > .env <<EOF
-                                    DOCKER_IMAGE_REPOSITORY=${env.DOCKER_IMAGE_REPOSITORY}
-                                    IMAGE_NAME=${env.IMAGE_NAME}
-                                    SPRING_PROFILES_ACTIVE=default
-                                    EOF
+                        DOCKER_IMAGE_REPOSITORY=${env.DOCKER_IMAGE_REPOSITORY}
+                        IMAGE_NAME=${env.IMAGE_NAME}
+                        SPRING_PROFILES_ACTIVE=default
+                        EOF
 
-                                docker compose pull
+                                docker compose \
+                                  -f docker-compose.yaml \
+                                  pull
 
-                                docker compose up \
+                                docker compose \
+                                  -f docker-compose.yaml \
+                                  up \
                                   --detach \
                                   --remove-orphans
 
-                                docker compose ps
+                                docker compose \
+                                  -f docker-compose.yaml \
+                                  ps
                             '
                         """
                     }
