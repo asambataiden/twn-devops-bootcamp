@@ -80,6 +80,58 @@ pipeline {
                 // deployApp()
             }
         }
+
+
+        stage('Commit Version Update') {
+            when {
+                branch 'commitVersionUpdate'
+            }
+
+            steps {
+                script {
+                    echo "Preparing version commit for ${env.APP_VERSION}"
+
+                    sh '''
+                set -eu
+
+                git config user.name "Jenkins CI"
+                git config user.email "jenkins-ci@users.noreply.github.com"
+
+                git add pom.xml
+
+                echo "Files staged for commit:"
+                git diff --cached --name-only
+            '''
+
+                    def hasChanges = sh(
+                        script: 'git diff --cached --quiet',
+                        returnStatus: true
+                    )
+
+                    if (hasChanges == 0) {
+                        echo 'No version change to commit. Skipping commit and push.'
+                    } else {
+                        sh """
+                    git commit \
+                      -m "chore(release): bump version to ${env.APP_VERSION}"
+                """
+
+                        withCredentials([
+                            gitUsernamePassword(
+                                credentialsId: 'github-credentials',
+                                gitToolName: 'Default'
+                            )
+                        ]) {
+                            sh '''
+                        set -eu
+                        git push origin HEAD:commitVersionUpdate
+                    '''
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     post {
