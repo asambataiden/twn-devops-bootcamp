@@ -69,94 +69,8 @@ pipeline {
             }
         }
 
-       /* stage('Deploy') {
-            when {
-                branch 'main'
-            }
 
-            steps {
-
-                script {
-
-                    echo "Deploying application version ${env.APP_VERSION}"
-
-                    def dockerCmd = "docker run -p 8080:8080 -d ${env.DOCKER_IMAGE_REPOSITORY}:${env.IMAGE_NAME}"
-
-                    sshagent(credentials: ['aws-ec2-docker-server-ssh'], executable: '') {
-                        // some block
-
-                    }
-
-
-
-                    // Replace with Shared Library step when migrated:
-                    // deployApp()
-
-                }
-
-            }
-        }*/
-
-        /*stage('Deploy') {
-            when {
-                branch 'main'
-            }
-
-            steps {
-                script {
-                    def image =
-                    "${env.DOCKER_IMAGE_REPOSITORY}:${env.IMAGE_NAME}"
-
-                    def containerName = 'demo-app'
-                    def host = env.EC2_HOST
-
-                    echo "Deploying ${image} to ${host}"
-
-                    sshagent(credentials: ['aws-ec2-docker-server-ssh']) {
-                        echo 'Secure copy docker-compose.yaml file to docker server '
-
-                        def dockerComposeCmd = 'docker-compose -f docker-compose.yaml up -d'
-
-                        def dockerRunCmd = " docker run \
-                                    --detach \
-                                    --name ${containerName} \
-                                    --restart unless-stopped \
-                                    --publish 8080:8080 \
-                                    ${image} "
-
-                        sh """
-
-                            scp docker-compose.yaml ec2-user@${host}:/home/ec2-user
-
-                            set -eu
-
-                            ssh -o StrictHostKeyChecking=no ec2-user@${host} '
-                                set -eu
-
-                                docker pull ${image}
-
-                                docker rm -f ${containerName} 2>/dev/null || true
-
-                                docker run \
-                                    --detach \
-                                    --name ${containerName} \
-                                    --restart unless-stopped \
-                                    --publish 8080:8080 \
-                                    ${image}
-
-                                sleep 3
-
-                                docker ps \
-                                    --filter "name=${containerName}" \
-                                    --filter "status=running"
-                            '
-                        """
-                    }
-                }
-            }
-        }*/
-
-        stage('Deploy') {
+        stage('Deploy to Ec2 with Docker Compose') {
             when {
                 branch 'deployToAWSDokerServer_With_DockerCompose'
             }
@@ -164,49 +78,92 @@ pipeline {
             steps {
                 script {
                     def host = env.EC2_HOST
+                    def remoteDir = '/home/ec2-user/demo-app'
+                    def image = "${env.DOCKER_IMAGE_REPOSITORY}:${env.IMAGE_NAME}"
 
-                    echo "Deploying ${env.DOCKER_IMAGE_REPOSITORY}:${env.IMAGE_NAME} to ${host}"
+                    echo "Deploying image ${image} to EC2 ${host}"
 
                     sshagent(credentials: ['aws-ec2-docker-server-ssh']) {
 
+                        /*
+						 * Bootstrap the deployment directory.
+						 *
+						 * This makes the pipeline self-contained:
+						 * nothing needs to be prepared manually on EC2.
+						 */
                         sh """
-                            set -eu
+                    set -eu
 
-                            scp \
-                              -o StrictHostKeyChecking=no \
-                              docker-compose.yaml \
-                              ec2-user@${host}:/home/ec2-user/docker-compose.yaml
-                        """
+                    ssh \
+                      -o StrictHostKeyChecking=no \
+                      ec2-user@${host} \
+                      'mkdir -p ${remoteDir}'
+                """
 
+                        /*
+						 * Copy the desired-state Docker Compose definition.
+						 */
                         sh """
-                            set -eu
+                    set -eu
 
-                            ssh \
-                              -o StrictHostKeyChecking=no \
-                              ec2-user@${host} '
-                                set -eu
+                    scp \
+                      -o StrictHostKeyChecking=no \
+                      docker-compose.yaml \
+                      ec2-user@${host}:${remoteDir}/docker-compose.yaml
+                """
 
-                                cat > .env <<EOF
-                        DOCKER_IMAGE_REPOSITORY=${env.DOCKER_IMAGE_REPOSITORY}
-                        IMAGE_NAME=${env.IMAGE_NAME}
-                        SPRING_PROFILES_ACTIVE=default
-                        EOF
+                        /*
+						 * Create deployment configuration and reconcile
+						 * the EC2 Docker Compose deployment.
+						 */
+                        sh """
+                    set -eu
 
-                                docker compose \
-                                  -f docker-compose.yaml \
-                                  pull
+                    ssh \
+                      -o StrictHostKeyChecking=no \
+                      ec2-user@${host} '
+                        set -eu
 
-                                docker compose \
-                                  -f docker-compose.yaml \
-                                  up \
-                                  --detach \
-                                  --remove-orphans
+                        cd ${remoteDir}
 
-                                docker compose \
-                                  -f docker-compose.yaml \
-                                  ps
-                            '
-                        """
+                        printf "%s\\n" \
+                          "DOCKER_IMAGE_REPOSITORY=${env.DOCKER_IMAGE_REPOSITORY}" \
+                          "IMAGE_NAME=${env.IMAGE_NAME}" \
+                          "SPRING_PROFILES_ACTIVE=default" \
+                          > .env
+
+                        echo "Validating Docker Compose configuration..."
+
+                        docker compose \
+                          --env-file .env \
+                          -f docker-compose.yaml \
+                          config \
+                          --quiet
+
+                        echo "Pulling deployment images..."
+
+                        docker compose \
+                          --env-file .env \
+                          -f docker-compose.yaml \
+                          pull
+
+                        echo "Deploying application..."
+
+                        docker compose \
+                          --env-file .env \
+                          -f docker-compose.yaml \
+                          up \
+                          --detach \
+                          --remove-orphans
+
+                        echo "Deployment status:"
+
+                        docker compose \
+                          --env-file .env \
+                          -f docker-compose.yaml \
+                          ps
+                      '
+                """
                     }
                 }
             }
